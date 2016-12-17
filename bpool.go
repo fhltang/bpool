@@ -11,7 +11,7 @@ type BPool struct {
 	pool sync.Pool
 }
 
-func New(max int64, new func() interface{}) *BPool {
+func New(max int, new func() interface{}) *BPool {
 	bpool := BPool{
 		semaphore: make(chan interface{}, max),
 		pool:      sync.Pool{New: new},
