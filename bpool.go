@@ -56,7 +56,6 @@ func New(max int, new func() interface{}) *BPool {
 // If it does not exist, it will call new to create a new one.
 func (this *BPool) Get() interface{} {
 	this.cond.L.Lock()
-	defer this.cond.L.Unlock()
 
 	for len(this.freeList) == 0 && this.cap == this.max {
 		this.cond.Wait()
@@ -69,14 +68,20 @@ func (this *BPool) Get() interface{} {
 	//
 	//     this.cap < this.max
 
-	if len(this.freeList) == 0 {
+	var item interface{}
+	makeNew := false
+	if len(this.freeList) > 0 {
+		item = this.freeList[len(this.freeList)-1]
+		this.freeList = this.freeList[:len(this.freeList)-1]
+	} else {
 		this.cap++
-		return this.new()
+		makeNew = true
 	}
-	// Necessarily len(this.freeList) > 0 .
+	this.cond.L.Unlock()
 
-	item := this.freeList[len(this.freeList)-1]
-	this.freeList = this.freeList[:len(this.freeList)-1]
+	if makeNew {
+		item = this.new()
+	}
 	return item
 }
 
